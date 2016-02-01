@@ -20,12 +20,15 @@
 // Outbound message definitions
 #define CHECKSUM_FAILED "0CF"
 #define UNRECOGNIZED_COMMAND "0UC"
+#define DONE "0DN"
 
 // Encoder Board Variables
 #define ROTARY_SLAVE_ADDRESS 5
 #define ROTARY_COUNT 6
 #define PRINT_DELAY 200
 
+int  lastSeqNo;
+bool done;
 
 int bytes_to_store = 0;
 
@@ -46,6 +49,25 @@ void setup(){
   // 1. inital test to see if message is recieved to computer stating "hello world"
    helloWorld();
 }
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+//                       Check if command not redundant                            //
+/////////////////////////////////////////////////////////////////////////////////////
+bool ignore(int seqNo)
+{
+  if (seqNo == lastSeqNo) {
+    if (done) {
+      Serial.println(DONE);
+    }
+    return true;
+  } else {
+    lastSeqNo = seqNo;
+    done = false;
+    return false;
+  }
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 //                              Helper Functions                                   //
@@ -106,10 +128,10 @@ void resetDynamicPositions(){
 
 void stopRobot(){
 
-  motorAllStop();
-
   // send reply message
   Serial.println("0RS");
+
+  motorAllStop();
   printMotorPositions();
   
 }
@@ -119,16 +141,14 @@ void stopRobot(){
 //////////////////////////////////////
 
 void moveRobotForward(int power){
-
+    
+  // need to create a reply message to let the PC acknowledge the accepted request
+  Serial.println("0RF");
+  
   //motorStop(0); // this might be useful, in the case the robot is already in a turning move
 
   motorForward(FRONT_LEFT_MOTOR, power);
   motorForward(FRONT_RIGHT_MOTOR, (int) (power*0.99));
-  
-
-  // need to create a reply message to let the PC acknowledge the accepted request and execution
-  Serial.println("0RF");
-
 }
 
 //////////////////////////////////////
@@ -136,7 +156,10 @@ void moveRobotForward(int power){
 //////////////////////////////////////
 
 void moveRobotBackward(int power){
-
+  
+  // send reply message
+  Serial.println("0RB");
+  
   //motorStop(0); // again might be useful if the robot is in a turning move
 
   // stop the motors first incase they are moving forward (to prevent mechinical failure)
@@ -146,9 +169,6 @@ void moveRobotBackward(int power){
   // set motors to move backwards
   motorBackward(FRONT_LEFT_MOTOR, power);
   motorBackward(FRONT_RIGHT_MOTOR, ((int) power*0.99));
-
-  // send reply message
-  Serial.println("0RB");
   
 }
 
@@ -157,14 +177,14 @@ void moveRobotBackward(int power){
 //////////////////////////////////////
 
 void rotateRobotLeft(int power){
-
+  
+  // send reply message 
+  Serial.println("0RL");
+  
   // set motors for left rotation
   motorForward(FRONT_RIGHT_MOTOR, power);
   motorBackward(FRONT_LEFT_MOTOR, power);
   motorForward(TURNING_MOTOR, power);
-  
-  // send reply message 
-  Serial.println("0RL");
   
 }
 
@@ -173,14 +193,14 @@ void rotateRobotLeft(int power){
 //////////////////////////////////////
 
 void rotateRobotRight(int power){
-
+  
+  // send reply message 
+  Serial.println("0RL");
+  
   // set motors for left rotation
   motorBackward(FRONT_RIGHT_MOTOR, power);
   motorForward(FRONT_LEFT_MOTOR, power);
   motorBackward(TURNING_MOTOR, power);
-  
-  // send reply message 
-  Serial.println("0RL");
   
 }
 
@@ -189,9 +209,12 @@ void rotateRobotRight(int power){
 //////////////////////////////////////
 
 void robotKick(int power){
-
+  
+  // send reply message
+  Serial.println("0RK");
+  
   int d = 1500 - (power * 10);
-  Serial.println(d);
+  //Serial.println(d);
 
   motorForward(ACTION_MOTOR, 70);
   delay(200);
@@ -205,9 +228,6 @@ void robotKick(int power){
   delay(150);
   motorAllStop();
 
-  // send reply message
-  Serial.println("0RK");
-  
 }
 
 //////////////////////////////////////
@@ -216,17 +236,18 @@ void robotKick(int power){
 
 void robotGrab(int power){
 
-  // move action motor forward
-  motorForward(ACTION_MOTOR,power);
-
   // send reply message
   Serial.println("0RG");
+
+  // move action motor forward
+  motorForward(ACTION_MOTOR,power);
   
 }
 
 
 void robotForwardDistance(int distance){
 
+  Serial.println("0RF"); 
 
   // reset dynamicPositions
   resetDynamicPositions();
@@ -250,13 +271,12 @@ void robotForwardDistance(int distance){
     //Serial.println(right);
   }
 
-  motorAllStop();
-
-  Serial.println("0RF");  
+  motorAllStop(); 
 }
 
 void robotBackwardDistance(int distance){
 
+  Serial.println("0RB");  
 
   // reset dynamicPositions
   resetDynamicPositions();
@@ -281,13 +301,13 @@ void robotBackwardDistance(int distance){
   }
 
   motorAllStop();
-
-  Serial.println("0RB");  
 }
 
 void robotLeft(int d){
 
-    // reset dynamicPositions
+  Serial.println("0RL");
+  
+  // reset dynamicPositions
   resetDynamicPositions();
 
   // setup positions of rotations
@@ -311,9 +331,6 @@ void robotLeft(int d){
   }
 
   motorAllStop();
-
-  Serial.println("0RL");
-  
 }
 
 void robotRight(int d){
@@ -463,9 +480,9 @@ void loop(){
     c.trim();
 
     // if mesage is incomplete send error message and flush serial 
-    if(c.length() != 6){
-      Serial.println(c);
+    if(c.length() != 7){
       Serial.println("0IW");
+      //Serial.println(c);
       serialFlush();
       return;
     }
@@ -473,20 +490,23 @@ void loop(){
       // need to check if signuture is our teams first!
       // avoids unessacary computation on the arduino if it is not a message for out team.
       int sig = getSig(c);
-      //int seqNo = getSeqNo(c);
+      int seqNo = getSeqNo(c);
       
       // Quits if sig belongs to other teams
       // OR if command is redundant (i.e. already executed)
       if(sig != 0){ return; }
+      if(ignore(seqNo)){ return; }
 
 
       int opcode = getOpcode(c);
       int arg = getArg(c);
       int check = check_checksum(c, opcode, arg);
       
+      // flag that shows if command was recognized
+      bool recognized = true;
+      
       // if checksum is correct continue decoding message and execute
       if(check == 1){
-    
     
         switch (opcode){
 
@@ -509,19 +529,20 @@ void loop(){
           case RIGHT:   robotRight(arg);
           break;
 
-          case KICK: Serial.println("Stage 1"); robotKick(arg); Serial.println("Stage 2");
+          case KICK: robotKick(arg);
           break;
 
           case GRAB: robotGrab(arg);
           break;
           
-          case STORE: bytes_to_store = arg; //Serial.println(arg);
-          break;
+          case STORE: bytes_to_store = arg;
       
-          default: Serial.println(UNRECOGNIZED_COMMAND);
+          default: Serial.println(UNRECOGNIZED_COMMAND); recognized = false;
           break;
       
         } // switch 
+        if (recognized)
+            done = true;
       } // if checksum
       else{
         // checksum is not correct, sig is therefore message was corrupted
