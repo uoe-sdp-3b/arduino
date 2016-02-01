@@ -536,6 +536,7 @@ void loop(){
           break;
           
           case STORE: bytes_to_store = arg;
+          break;
       
           default: Serial.println(UNRECOGNIZED_COMMAND); recognized = false;
           break;
