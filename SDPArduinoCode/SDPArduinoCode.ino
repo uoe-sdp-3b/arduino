@@ -473,7 +473,7 @@ void loop(){
       // need to check if signuture is our teams first!
       // avoids unessacary computation on the arduino if it is not a message for out team.
       int sig = getSig(c);
-      int seqNo = getSeqNo(c);
+      //int seqNo = getSeqNo(c);
       
       // Quits if sig belongs to other teams
       // OR if command is redundant (i.e. already executed)
