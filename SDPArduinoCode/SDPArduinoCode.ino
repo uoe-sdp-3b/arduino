@@ -130,9 +130,8 @@ void stopRobot(){
 
   // send reply message
   Serial.println("0RS");
-
   motorAllStop();
-  printMotorPositions();
+  //printMotorPositions();
   
 }
 
@@ -482,7 +481,6 @@ void loop(){
     // if mesage is incomplete send error message and flush serial 
     if(c.length() != 7){
       Serial.println("0IW");
-      //Serial.println(c);
       serialFlush();
       return;
     }
@@ -544,11 +542,14 @@ void loop(){
         } // switch 
         if (recognized)
             done = true;
+        else
+            lastSeqNo = not lastSeqNo;
       } // if checksum
       else{
         // checksum is not correct, sig is therefore message was corrupted
         // reply: incorrect message (re-send)
         Serial.println(CHECKSUM_FAILED);
+        lastSeqNo = not lastSeqNo;
       }
   } // if serial.avalaible 
 } // loop body
