@@ -1,11 +1,8 @@
-#include "SDPArduino.h"
-#include <Wire.h>
 #include <stdlib.h>
+#include <Wire.h>
+#include "actions.h"
 
-#define TURNING_MOTOR 0
-#define FRONT_LEFT_MOTOR 1
-#define FRONT_RIGHT_MOTOR 2
-#define ACTION_MOTOR 3
+
 
 // Inbound message definitions
 #define STOP 0
@@ -22,40 +19,25 @@
 #define UNRECOGNIZED_COMMAND "0UC"
 #define DONE "0DN"
 
-// Encoder Board Variables
-#define ROTARY_SLAVE_ADDRESS 5
-#define ROTARY_COUNT 6
-#define PRINT_DELAY 200
-
+// Global Variables
 int  lastSeqNo;
 bool done;
 
-int bytes_to_store = 0;
-
-// Initial motor position is 0.
-int positions[ROTARY_COUNT] = {0};
-int UO[ROTARY_COUNT] = {0};
-int dynamicPositions[ROTARY_COUNT] = {0};
-/////////////////////////////////////////////
-int rotations[ROTARY_COUNT] = {0};
 
 
 
+/////////////////////////////////////////////////////////////////////////////////////
+//                                  initialSetup                                   //
+/////////////////////////////////////////////////////////////////////////////////////
 void setup(){
-  
-  SDPsetup();
-  Serial.setTimeout(100); // time out for accepting a string
-
-  // 1. inital test to see if message is recieved to computer stating "hello world"
-   helloWorld();
+  initialSetup();
 }
 
 
 /////////////////////////////////////////////////////////////////////////////////////
 //                       Check if command not redundant                            //
 /////////////////////////////////////////////////////////////////////////////////////
-bool ignore(int seqNo)
-{
+bool ignore(int seqNo){
   if (seqNo == lastSeqNo) {
     if (done) {
       Serial.println(DONE);
@@ -70,30 +52,35 @@ bool ignore(int seqNo)
 
 
 /////////////////////////////////////////////////////////////////////////////////////
-//                              Helper Functions                                   //
+//                              Instruction Decoding                               //
+// This will be changed later on to improve latency issues (2 bytes instead of 7)  //
 /////////////////////////////////////////////////////////////////////////////////////
 
-
+// convert character to integer
 int getNumFromChar(char c){
   int r = (int)c - (int)'0';
   return r;
 }
 
+// deocde signiture byte
 int getSig(String c){
   int r = getNumFromChar(c[0]);
   return r;
 }
 
+// decode sequence byte
 int getSeqNo(String c){
   int r = getNumFromChar(c[6]);
   return r;
 }
 
+// decode opcode byte
 int getOpcode(String c){
   int r = getNumFromChar(c[1]);
   return r;
 }
 
+// decode arguemnt byte
 int getArg(String c){
   int r1 = getNumFromChar(c[2]);
   int r2 = getNumFromChar(c[3]);
@@ -101,6 +88,7 @@ int getArg(String c){
   return ((r1*100)+(r2*10)+r3);
 }
 
+// decode checksum byte and calculate if checksum byte is correct
 int check_checksum(String c, int opcode, int arg){
   int checksum = getNumFromChar(c[5]);
   int checksum_recalculated = (opcode + arg) % 10;
@@ -114,366 +102,26 @@ int check_checksum(String c, int opcode, int arg){
   
 }
 
-void resetDynamicPositions(){
-  int i;
-  for(i = 0; i < 5; i++){
-    dynamicPositions[i] = 0;
-  }
-  
-}
-
-//////////////////////////////////////
-//          Robot Stop              //
-//////////////////////////////////////
-
-void stopRobot(){
-
-  // send reply message
-  Serial.println("0RS");
-
-  motorAllStop();
-  printMotorPositions();
-  
-}
-
-//////////////////////////////////////
-//          Robot Forward           //
-//////////////////////////////////////
-
-void moveRobotForward(int power){
-    
-  // need to create a reply message to let the PC acknowledge the accepted request
-  Serial.println("0RF");
-  
-  //motorStop(0); // this might be useful, in the case the robot is already in a turning move
-
-  motorForward(FRONT_LEFT_MOTOR, power);
-  motorForward(FRONT_RIGHT_MOTOR, (int) (power*0.99));
-}
-
-//////////////////////////////////////
-//          Robot Back              //
-//////////////////////////////////////
-
-void moveRobotBackward(int power){
-  
-  // send reply message
-  Serial.println("0RB");
-  
-  //motorStop(0); // again might be useful if the robot is in a turning move
-
-  // stop the motors first incase they are moving forward (to prevent mechinical failure)
-  motorStop(FRONT_LEFT_MOTOR); 
-  motorStop(FRONT_RIGHT_MOTOR);
-  
-  // set motors to move backwards
-  motorBackward(FRONT_LEFT_MOTOR, power);
-  motorBackward(FRONT_RIGHT_MOTOR, ((int) power*0.99));
-  
-}
-
-//////////////////////////////////////
-//          Robot Left              //
-//////////////////////////////////////
-
-void rotateRobotLeft(int power){
-  
-  // send reply message 
-  Serial.println("0RL");
-  
-  // set motors for left rotation
-  motorForward(FRONT_RIGHT_MOTOR, power);
-  motorBackward(FRONT_LEFT_MOTOR, power);
-  motorForward(TURNING_MOTOR, power);
-  
-}
-
-//////////////////////////////////////
-//          Robot Right             //
-//////////////////////////////////////
-
-void rotateRobotRight(int power){
-  
-  // send reply message 
-  Serial.println("0RL");
-  
-  // set motors for left rotation
-  motorBackward(FRONT_RIGHT_MOTOR, power);
-  motorForward(FRONT_LEFT_MOTOR, power);
-  motorBackward(TURNING_MOTOR, power);
-  
-}
-
-//////////////////////////////////////
-//          Robot Kick              //
-//////////////////////////////////////
-
-void robotKick(int power){
-  
-  // send reply message
-  Serial.println("0RK");
-  
-  int d = 1500 - (power * 10);
-  //Serial.println(d);
-
-  motorForward(ACTION_MOTOR, 70);
-  delay(200);
-  
-  // move action motor backward
-  motorBackward(ACTION_MOTOR,power);
-  delay(d);
-  motorAllStop();
-
-  motorForward(ACTION_MOTOR, 70);
-  delay(150);
-  motorAllStop();
-
-}
-
-//////////////////////////////////////
-//          Robot Grab              //
-//////////////////////////////////////
-
-void robotGrab(int power){
-
-  // send reply message
-  Serial.println("0RG");
-
-  // move action motor forward
-  motorForward(ACTION_MOTOR,power);
-  
-}
-
-
-void robotForwardDistance(int distance){
-
-  Serial.println("0RF"); 
-
-  // reset dynamicPositions
-  resetDynamicPositions();
-
-  // setup positions of rotations
-  int rot = (int) (distance * 6.2471) - 10; // 6.2471 = rotations for 1 cm (WRONG ATM)
-  int left = dynamicPositions[0];
-  int right = dynamicPositions[1];
-
-  // turn on motors
-  motorForward(FRONT_LEFT_MOTOR, 100);
-  motorForward(FRONT_RIGHT_MOTOR, 100);
-
-  while(left < rot || right < rot){
-    delay(5);
-    updateMotorPositions();
-    //printDynamicPositions();
-    left = dynamicPositions[0];
-    //Serial.println(left);
-    right = dynamicPositions[1];    
-    //Serial.println(right);
-  }
-
-  motorAllStop(); 
-}
-
-void robotBackwardDistance(int distance){
-
-  Serial.println("0RB");  
-
-  // reset dynamicPositions
-  resetDynamicPositions();
-
-  // setup positions of rotations
-  int rot = (int) (-distance * 6.2471) + 10; // 6.2471 = rotations for 1 cm (WRONG ATM)
-  int left = dynamicPositions[0];
-  int right = dynamicPositions[1];
-
-  // turn on motors
-  motorBackward(FRONT_LEFT_MOTOR, 100);
-  motorBackward(FRONT_RIGHT_MOTOR, 100);
-
-  while(left > rot || right > rot){
-    delay(5);
-    updateMotorPositions();
-    //printDynamicPositions();
-    left = dynamicPositions[0];
-    //Serial.println(left);
-    right = dynamicPositions[1];    
-    //Serial.println(right);
-  }
-
-  motorAllStop();
-}
-
-void robotLeft(int d){
-
-  Serial.println("0RL");
-  
-  // reset dynamicPositions
-  resetDynamicPositions();
-
-  // setup positions of rotations
-  int rot = (int) (d*0.9); // 1.26414 = rotations for 1 degrees (WRONG ATM)
-  int left = dynamicPositions[0];
-  int right = dynamicPositions[1];
-
-  // turn on motors
-  motorForward(FRONT_RIGHT_MOTOR, 50);
-  motorBackward(FRONT_LEFT_MOTOR, 50);
-  motorForward(TURNING_MOTOR, 50);
-
-  while(left > -rot || right < rot){
-    delay(5);
-    updateMotorPositions();
-    //printDynamicPositions();
-    left = dynamicPositions[0];
-    //Serial.println(left);
-    right = dynamicPositions[1];    
-    //Serial.println(right);
-  }
-
-  motorAllStop();
-}
-
-void robotRight(int d){
-  
-    // reset dynamicPositions
-  resetDynamicPositions();
-
-  // setup positions of rotations
-  int rot = (int) (d*0.9); // 1.26414 = rotations for 1 degrees (WRONG ATM)
-  int left = dynamicPositions[0];
-  int right = dynamicPositions[1];
-
-  // turn on motors
-  motorBackward(FRONT_RIGHT_MOTOR, 50);
-  motorForward(FRONT_LEFT_MOTOR, 50);
-  motorBackward(TURNING_MOTOR, 50);
-
-  while(left < rot || right > -rot){
-    delay(5);
-    updateMotorPositions();
-    //printDynamicPositions();
-    left = dynamicPositions[0];
-    //Serial.println(left);
-    right = dynamicPositions[1];    
-    //Serial.println(right);
-  }
-
-  motorAllStop();
-
-  Serial.println("0RR");
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-//                              TESTING ENCODER BOARD READS                                             //
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-void updateMotorPositions() {
-  // Request motor position deltas from rotary slave board
-  Wire.requestFrom(ROTARY_SLAVE_ADDRESS, ROTARY_COUNT);
-  
-  // Update the recorded motor positions
-  for (int i = 0; i < ROTARY_COUNT; i++) {
-
-    // another integer array OU (over/uder 0-30000)
-    if(positions[i] > 30000){
-      int temp = positions[i];
-      int remendier = temp - 30000;
-      positions[i] = remendier;
-      UO[i] += 1;      
-    }
-
-    if(positions[i] < -30000 && positions[i] < 0){
-      int temp = positions[i];
-      int remendier = temp + 30000;
-      positions[i] = remendier;
-      UO[i] -= 1;
-    }
-    
-    int r = (int8_t) Wire.read();  // Must cast to signed 8-bit type
-    positions[i] -= r;
-    dynamicPositions[i] -= r;
-
-    // will go soon
-    rotations[i] = -r;
-
-    
-  }
-}
-
-void printDynamicPositions(){
-    Serial.print("dynamic positions: ");
-    for (int i = 0; i < ROTARY_COUNT; i++) {
-    Serial.print(dynamicPositions[i]);
-    Serial.print(' ');
-  }
-  Serial.println();
-  delay(PRINT_DELAY);  // Delay to avoid flooding serial out
-  
-}
-
-void printMotorPositions() {
-  Serial.print("Motor positions: ");
-  for (int i = 0; i < ROTARY_COUNT; i++) {
-    Serial.print(positions[i]);
-    Serial.print(' ');
-  }
-  Serial.print("                      ");
-  Serial.print("UO: ");
-  for (int i = 0; i < ROTARY_COUNT; i++) {
-    Serial.print(UO[i]);
-    Serial.print(' ');
-  }
-  Serial.print("                       ");
-  Serial.print("rotations: ");
-  for (int i = 0; i < ROTARY_COUNT; i++) {
-    Serial.print(rotations[i]);
-    Serial.print(' ');
-  }
-  Serial.println();
-  delay(PRINT_DELAY);  // Delay to avoid flooding serial out
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//                                Milestone 1 communication functions                                     //
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void storeByte(byte one_byte){
-  int register_address = 69; 
-  Wire.beginTransmission(register_address); // open I2C communication to intended receiver
-  Wire.write( one_byte );   // sends the string (which is the file contents)
-  Wire.endTransmission(); // end I2C communcation.
-  Serial.println(one_byte, DEC);
-  bytes_to_store--;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+// Should empty serial buffer
+// juastus has said otherwise, TEST and find solution if not.
 void serialFlush(){
   while(Serial.available() > 0) {
     char t = Serial.read();
   }
 } 
 
+////////////////////////////////////////////////////////////////////////////////////////
+//                              Main loop                                             //
+////////////////////////////////////////////////////////////////////////////////////////
+
 
 void loop(){
   
-  updateMotorPositions();
-  //printMotorPositions();
-  //printDynamicPositions();
-  //Serial.println("0");
+  // poll motor encoder board for readings and save them
+  //updateMotorPositions();
 
   // if message is available on our frequency accept it.
   if(Serial.available() > 0){
-    
-    // sending file though I2C
-    if (bytes_to_store > 0) {      
-      byte incoming = Serial.read();
-      storeByte(incoming);
-      return;
-    }
     
     // save message sent from PC to STRING c.
     String c = Serial.readString();
@@ -482,74 +130,61 @@ void loop(){
     // if mesage is incomplete send error message and flush serial 
     if(c.length() != 7){
       Serial.println("0IW");
-      //Serial.println(c);
       serialFlush();
       return;
     }
     
-      // need to check if signuture is our teams first!
-      // avoids unessacary computation on the arduino if it is not a message for out team.
-      int sig = getSig(c);
-      int seqNo = getSeqNo(c);
+    // initial instruction decode
+    int sig = getSig(c);
+    int seqNo = getSeqNo(c);
       
-      // Quits if sig belongs to other teams
-      // OR if command is redundant (i.e. already executed)
-      if(sig != 0){ return; }
-      if(ignore(seqNo)){ return; }
+    // Quits if sig belongs to other teams
+    // OR if command is redundant (i.e. already executed)
+    if(sig != 0){ return; }
+    if(ignore(seqNo)){ return; }
 
+    // completed after sig and ignore checks to avoid unessacary computation
+    // decodes instructions, fetches opcode, argument and checks the entire message
+    int opcode = getOpcode(c);
+    int arg = getArg(c);
 
-      int opcode = getOpcode(c);
-      int arg = getArg(c);
-      int check = check_checksum(c, opcode, arg);
-      
-      // flag that shows if command was recognized
-      bool recognized = true;
-      
-      // if checksum is correct continue decoding message and execute
-      if(check == 1){
+    // flag that shows if command was recognized
+    bool recognized = true;
     
-        switch (opcode){
+    // if checksum is correct continue decoding message and execute
+    int check = check_checksum(c, opcode, arg);
+    if(check == 1){
+    
+      switch (opcode){
 
-          case STOP:  stopRobot();
-          break;
+        case STOP:        //stopRobot();
+        break;
         
-          case FORWARD:  robotForwardDistance(arg);
-          //case FORWARD: moveRobotForward(arg);
-          break;
-      
-          //case BACKWARD:  moveRobotBackward(arg);
-          case BACKWARD:    robotBackwardDistance(arg);
-          break;
-      
-          //case LEFT:  rotateRobotLeft(arg);
-          case LEFT: robotLeft(arg);
-          break;
+        case FORWARD:     //robotForwardDistance(arg);
+        break;
 
-          //case RIGHT:  rotateRobotRight(arg);
-          case RIGHT:   robotRight(arg);
-          break;
+        case BACKWARD:    //robotBackwardDistance(arg);
+        break;
 
-          case KICK: robotKick(arg);
-          break;
+        case LEFT:        //robotLeft(arg);
+        break;
 
-          case GRAB: robotGrab(arg);
-          break;
+        case RIGHT:       //robotRight(arg);
+        break;
+
+        case KICK:        //robotKick(arg);
+        break;
+
+        case GRAB:        //robotGrab(arg);
+        break;
           
-          case STORE: bytes_to_store = arg;
-          break;
+        default:          Serial.println(UNRECOGNIZED_COMMAND); recognized = false;
+        break;
       
-          default: Serial.println(UNRECOGNIZED_COMMAND); recognized = false;
-          break;
-      
-        } // switch 
-        if (recognized)
-            done = true;
-      } // if checksum
-      else{
-        // checksum is not correct, sig is therefore message was corrupted
-        // reply: incorrect message (re-send)
-        Serial.println(CHECKSUM_FAILED);
-      }
-  } // if serial.avalaible 
-} // loop body
+      } // end of switch 
+      if (recognized) { done = true; }
+    } // end of if checksum
+    else{ Serial.println(CHECKSUM_FAILED);  } // checksum failed
+  } // end of if serial.avalaible 
+} // end of loop body
 
