@@ -183,8 +183,67 @@ void printMotorPositions() {
 }
 
 
+//////////////////////////////////////
+//          Robot Left              //
+//////////////////////////////////////
+void robotTurnAntiClockwise(int degrees){
+
+  Serial.println("0RL");
+  
+  // reset dynamicPositions
+  resetDynamicPositions(dynamicPositions);
+
+  // setup positions of rotations
+  int rot = (int) (degrees*0.9); // 1.26414 = rotations for 1 degrees (WRONG ATM)
+  int left = dynamicPositions[0];
+  int right = dynamicPositions[1];
+
+  // turn on motors
+  motorForward(FRONT_RIGHT_MOTOR, 50);
+  motorBackward(FRONT_LEFT_MOTOR, 50);
+  motorForward(TURNING_MOTOR, 50);
+
+  while(left > -rot || right < rot){
+    // is this delay needed?
+    delay(5);
+    updateDynamicPositions(dynamicPositions);
+    left = dynamicPositions[0];
+    right = dynamicPositions[1];    
+  }
+
+  motorAllStop();
+}
 
 
+//////////////////////////////////////
+//          Robot Right             //
+//////////////////////////////////////
+void robotTurnClockwise(int degrees){
+  
+  // reset dynamicPositions
+  resetDynamicPositions(dynamicPositions);
 
+  // setup positions of rotations
+  int rot = (int) (degrees*0.9); // 1.26414 = rotations for 1 degrees (WRONG ATM)
+  int left = dynamicPositions[0];
+  int right = dynamicPositions[1];
+
+  // turn on motors
+  motorBackward(FRONT_RIGHT_MOTOR, 50);
+  motorForward(FRONT_LEFT_MOTOR, 50);
+  motorBackward(TURNING_MOTOR, 50);
+
+  while(left < rot || right > -rot){
+    // this delay may not be needed
+    delay(5);
+    updateDynamicPositions( dynamicPositions);
+    left = dynamicPositions[0];
+    right = dynamicPositions[1];    
+  }
+
+  motorAllStop();
+
+  Serial.println("0RR");
+}
 
 
