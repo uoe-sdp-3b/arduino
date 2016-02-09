@@ -13,6 +13,8 @@
 #define KICK 5 
 #define GRAB 6
 #define STORE 7
+#define OPEN 8
+#define CLOSE 9
 
 // Outbound message definitions
 #define CHECKSUM_FAILED "0CF"
@@ -176,6 +178,12 @@ void loop(){
         break;
 
         case GRAB:        robotGrab(arg);
+        break;
+        
+        case OPEN:        robotOpen(arg);
+        break;
+        
+        case CLOSE:       robotClose(arg);
         break;
           
         default:          Serial.println(UNRECOGNIZED_COMMAND); recognized = false;
