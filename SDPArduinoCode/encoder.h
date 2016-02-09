@@ -7,9 +7,9 @@
         #define ROTARY_COUNT 6
         #define PRINT_DELAY 200
 
-	void printDynamicPositions(int **dynamicPositions);
-	void resetDynamicPositions(int **dynamicPositions);
-	void updateDynamicPositions(int **dynamicPositions);
+	void printDynamicPositions(int *dynamicPositions);
+	void resetDynamicPositions(int *dynamicPositions);
+	void updateDynamicPositions(int *dynamicPositions);
 
 #endif
 

@@ -157,25 +157,25 @@ void loop(){
     
       switch (opcode){
 
-        case STOP:        //stopRobot();
+        case STOP:        robotStop();
         break;
         
-        case FORWARD:     //robotForwardDistance(arg);
+        case FORWARD:     robotForwardDistance(arg);
         break;
 
-        case BACKWARD:    //robotBackwardDistance(arg);
+        case BACKWARD:    robotBackwardDistance(arg);
         break;
 
-        case LEFT:        //robotLeft(arg);
+        case LEFT:        robotTurnAntiClockwise(arg);
         break;
 
-        case RIGHT:       //robotRight(arg);
+        case RIGHT:       robotTurnClockwise(arg);
         break;
 
-        case KICK:        //robotKick(arg);
+        case KICK:        robotKick(arg);
         break;
 
-        case GRAB:        //robotGrab(arg);
+        case GRAB:        robotGrab(arg);
         break;
           
         default:          Serial.println(UNRECOGNIZED_COMMAND); recognized = false;
@@ -183,8 +183,11 @@ void loop(){
       
       } // end of switch 
       if (recognized) { done = true; }
+      else { lastSeqNo = not lastSeqNo; }
     } // end of if checksum
-    else{ Serial.println(CHECKSUM_FAILED);  } // checksum failed
+    else{ Serial.println(CHECKSUM_FAILED);
+    lastSeqNo = not lastSeqNo;  } // checksum failed
+
   } // end of if serial.avalaible 
 } // end of loop body
 

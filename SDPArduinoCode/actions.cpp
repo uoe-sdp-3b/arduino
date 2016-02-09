@@ -1,16 +1,23 @@
 #include <Arduino.h>
+#include "compass.h"
+#include "actions.h"
 #include "SDPArduino.h"
 #include "encoder.h"
-#include "actions.h"
 
-// array holding encoder rotations
-int *dynamicPositions;
-
+int dynamicPositions[ROTARY_COUNT];
 
 void initialSetup(){
+
+  // initial pin layout, and serial, wire begin
   SDPsetup();
-  dynamicPositions = (int *) malloc(sizeof(int)*ROTARY_COUNT);
-  Serial.setTimeout(100); // time out for accepting a string
+
+  // setup compass
+  setupCompass();
+
+  // set time out for reading 7 bytes from radio link
+  Serial.setTimeout(100);
+
+  // print hello world to acknowledge robot booting up
   helloWorld();
 }
 
@@ -70,7 +77,7 @@ void robotForwardDistance(int distance){
   Serial.println("0RF"); 
 
   // reset dynamicPositions
-  resetDynamicPositions(&dynamicPositions);
+  resetDynamicPositions(dynamicPositions);
 
   // setup positions of rotations
   int rot = (int) (distance * 6.2471) - 10; // 6.2471 = rotations for 1 cm (WRONG ATM)
@@ -83,8 +90,8 @@ void robotForwardDistance(int distance){
 
   while(left < rot || right < rot){
     delay(5);
-    updateDynamicPositions(&dynamicPositions);
-    //printDynamicPositions();
+    updateDynamicPositions(dynamicPositions);
+    // printDynamicPositions(dynamicPositions);
     left = dynamicPositions[0];
     //Serial.println(left);
     right = dynamicPositions[1];    
@@ -102,7 +109,7 @@ void robotBackwardDistance(int distance){
   Serial.println("0RB");  
 
   // reset dynamicPositions
-  resetDynamicPositions(&dynamicPositions);
+  resetDynamicPositions(dynamicPositions);
 
   // setup positions of rotations
   int rot = (int) (-distance * 6.2471) + 10; // 6.2471 = rotations for 1 cm (WRONG ATM)
@@ -115,7 +122,7 @@ void robotBackwardDistance(int distance){
 
   while(left > rot || right > rot){
     delay(5);
-    updateDynamicPositions(&dynamicPositions);
+    updateDynamicPositions(dynamicPositions);
     //printDynamicPositions();
     left = dynamicPositions[0];
     //Serial.println(left);
@@ -129,29 +136,18 @@ void robotBackwardDistance(int distance){
 //////////////////////////////////////
 //          Robot Left              //
 //////////////////////////////////////
-void robotTurnAntiClockWise(int degrees){
+void robotTurnAntiClockwise(int degrees){
 
   Serial.println("0RL");
-  
-  // reset dynamicPositions
-  resetDynamicPositions(&dynamicPositions);
-
-  // setup positions of rotations
-  int rot = (int) (degrees*0.9); // 1.26414 = rotations for 1 degrees (WRONG ATM)
-  int left = dynamicPositions[0];
-  int right = dynamicPositions[1];
+  float headingDegrees = updateCompass();
+  float newHeading = headingDegrees + degrees;
 
   // turn on motors
-  motorForward(FRONT_RIGHT_MOTOR, 50);
-  motorBackward(FRONT_LEFT_MOTOR, 50);
-  motorForward(TURNING_MOTOR, 50);
+  motorBackward(FRONT_RIGHT_MOTOR, 50);
+  motorForward(FRONT_LEFT_MOTOR, 50);
 
-  while(left > -rot || right < rot){
-    // is this delay needed?
-    delay(5);
-    updateDynamicPositions(&dynamicPositions);
-    left = dynamicPositions[0];
-    right = dynamicPositions[1];    
+  while(headingDegrees > newHeading){
+    headingDegrees = updateCompass();
   }
 
   motorAllStop();
@@ -162,32 +158,18 @@ void robotTurnAntiClockWise(int degrees){
 //////////////////////////////////////
 void robotTurnClockwise(int degrees){
   
-  // reset dynamicPositions
-  resetDynamicPositions(&dynamicPositions);
-
-  // setup positions of rotations
-  int rot = (int) (degrees*0.9); // 1.26414 = rotations for 1 degrees (WRONG ATM)
-  int left = dynamicPositions[0];
-  int right = dynamicPositions[1];
+  Serial.println("0RR");
+  
+  float headingDegrees = updateCompass();
+  float newHeading = headingDegrees - degrees;
 
   // turn on motors
   motorBackward(FRONT_RIGHT_MOTOR, 50);
   motorForward(FRONT_LEFT_MOTOR, 50);
-  motorBackward(TURNING_MOTOR, 50);
 
-  while(left < rot || right > -rot){
-    // this delay may not be needed
-    delay(5);
-    updateDynamicPositions(&dynamicPositions);
-    left = dynamicPositions[0];
-    right = dynamicPositions[1];    
+  while(headingDegrees > newHeading){
+    headingDegrees = updateCompass();
   }
 
   motorAllStop();
-
-  Serial.println("0RR");
 }
-
-
-// after this is done need to match names to switch statements
-// also need to include header file.

@@ -32,7 +32,7 @@ void SDPsetup() {
 }
 
 void helloWorld() {
-  Serial.println("hello world");
+Serial.println("hello world");
 }
 
 void motorBackward(int motorNum, int motorPower) { //Makes Motor motorNum go forwards at a power of motorPower
