@@ -10,6 +10,6 @@
 
 	void setupCompass();
 	float updateCompass();
-	void printCompass(int headingDegrees);
+	void printCompass(float headingDegrees);
 
 #endif

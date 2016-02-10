@@ -247,3 +247,64 @@ void robotTurnClockwise(int degrees){
 }
 
 
+  Serial.println("0RL");
+  float orginalHeading = updateCompass();
+  float finalHeading = fmod((orginalHeading - degrees), 360);
+  float difference = orginalHeading - finalHeading;
+  
+  if(orginalHeading < finalHeading){
+    difference = finalHeading - orginalHeading;
+  }
+  // turn on motors
+  motorBackward(FRONT_RIGHT_MOTOR, 60);
+  motorForward(FRONT_LEFT_MOTOR, 60);
+
+  while(difference > 0){
+    orginalHeading = updateCompass();
+    difference = orginalHeading - finalHeading;
+    
+    if(orginalHeading < finalHeading){
+      difference = finalHeading - orginalHeading;
+    }
+
+
+
+
+
+
+
+    ////////////////////////////////////////////
+      Serial.println("0RL");
+  int orginalAngle = (int) updateCompass();
+  int finalAngle = (orginalAngle - degrees) % 360;
+  int difference = degrees;
+
+  if(finalAngle < 0){
+    finalAngle = 360 + finalAngle;
+  }
+  
+  // turn on motors
+  motorBackward(FRONT_RIGHT_MOTOR, 50);
+  motorForward(FRONT_LEFT_MOTOR, 50);
+
+  while(difference > 2){
+
+    int currentAngle = (int) updateCompass();
+    difference = (finalAngle - currentAngle) % 360;
+    if(difference < 0 ){
+      difference = 360 + difference;
+    }
+
+
+
+    Serial.print(currentAngle);
+    Serial.print("            ");
+    Serial.print(finalAngle);
+    Serial.print("            ");
+    Serial.println(difference);
+    delay(100);
+  }
+
+  // Serial.println("1");
+  motorAllStop();
+  // Serial.println("2");

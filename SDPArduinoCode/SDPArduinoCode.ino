@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <Wire.h>
 #include "actions.h"
-
+#include "compass.h"
 
 
 // Inbound message definitions
@@ -121,6 +121,9 @@ void loop(){
   
   // poll motor encoder board for readings and save them
   //updateMotorPositions();
+  //float heading = updateCompass();
+  //printCompass(heading);
+
 
   // if message is available on our frequency accept it.
   if(Serial.available() > 0){

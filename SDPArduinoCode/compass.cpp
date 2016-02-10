@@ -27,7 +27,7 @@ void setupCompass(){
 float updateCompass(){
 
   // Retrive the raw values from the compass (not scaled).
-  MagnetometerRaw raw = compass.ReadRawAxis();
+  //MagnetometerRaw raw = compass.ReadRawAxis();
   
   // Retrived the scaled values from the compass (scaled to the configured scale).
   MagnetometerScaled scaled = compass.ReadScaledAxis();
@@ -63,11 +63,11 @@ float updateCompass(){
 
 }
 
-void printCompass(int headingDegrees){
+void printCompass(float headingDegrees){
   
-  Serial.print("Heading: ");
-  Serial.print(headingDegrees);
-  Serial.println(" Degrees");
+  // Serial.print("Heading: ");
+  Serial.println(headingDegrees);
+  // Serial.println(" Degrees");
 
 }
 
