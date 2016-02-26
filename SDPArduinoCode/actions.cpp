@@ -227,14 +227,14 @@ void robotOpen(int power){
   Serial.println("0RO");
 
   // move action motor forward
-  motorForward(ACTION_MOTOR,power);
+  motorBackward(ACTION_MOTOR,power);
 }
 
 //////////////////////////////////////
 //          Close grabber           //
 //////////////////////////////////////
 void robotClose(int power){
-  motorBackward(ACTION_MOTOR,power);
+  motorForward(ACTION_MOTOR,power);
   delay(50);
   motorStop(ACTION_MOTOR);
 
@@ -242,7 +242,7 @@ void robotClose(int power){
   Serial.println("0RC");
 
   // move action motor forward
-  motorForward(ACTION_MOTOR,power);
+  motorBackward(ACTION_MOTOR,power);
 }
 
 //////////////////////////////////////
