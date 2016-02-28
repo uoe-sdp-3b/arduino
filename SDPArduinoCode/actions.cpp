@@ -1,11 +1,24 @@
 #include <Arduino.h>
-#include "compass.h"
-#include "actions.h"
-#include "SDPArduino.h"
-#include "encoder.h"
+
+#include "actions.h"    // for being able to access global variables 
+#include "SDPArduino.h" // for turning motors off and on
+#include "encoder.h" // for reading, updating and printing encoder board information
+#include "compass.h" // for reading, printing, updating compass
+#include "gyro.h"   // for reading and updating the angle rotated using gyro sensor
+#include "IRSensor.h"
+
 #include <math.h>
 
+// variable to hold encoder readings
 int dynamicPositions[ROTARY_COUNT];
+// variable to hold compass readings
+float heading;
+// variables for holding the current angle that has been roatated based on gyro information
+float angleRotated;
+// variable stating if ball is caught or not
+int caughtBall; // 0 = false; 1 = true
+
+
 
 void initialSetup(){
 
@@ -13,7 +26,10 @@ void initialSetup(){
   SDPsetup();
 
   // setup compass
-  setupCompass();
+  setupCompass(&heading);
+
+  // setup gyro sensor
+  setupGyro();
 
   // set time out for reading 7 bytes from radio link
   Serial.setTimeout(100);
@@ -140,11 +156,7 @@ void robotBackwardDistance(int distance){
 void robotTurnAntiClockwise(int degrees){
 
   Serial.println("0RL");
-  
-  float baseAngle = updateCompass();
-  float finalAngle = -degrees;
-  float angle;
-  
+
   // reset dynamicPositions
   resetDynamicPositions(dynamicPositions);
 
@@ -161,20 +173,10 @@ void robotTurnAntiClockwise(int degrees){
     
     updateDynamicPositions(dynamicPositions);
     left = dynamicPositions[0];
-    right = dynamicPositions[1];
-    
-    angle = updateCompass();
-    angle = angle - baseAngle;  
+    right = dynamicPositions[1]; 
   }
 
   motorAllStop();
-  Serial.println("rotations");
-  printDynamicPositions(dynamicPositions);
-  Serial.println(baseAngle);
-  Serial.println(finalAngle);
-  Serial.println(angle);
-
-
 }  
 
 //////////////////////////////////////
@@ -183,10 +185,6 @@ void robotTurnAntiClockwise(int degrees){
 void robotTurnClockwise(int degrees){
   
   Serial.println("0RR");
-  
-  float baseAngle = updateCompass();
-  float finalAngle = -degrees;
-  float angle;
   
   // reset dynamicPositions
   resetDynamicPositions(dynamicPositions);
@@ -204,18 +202,10 @@ void robotTurnClockwise(int degrees){
 
     updateDynamicPositions( dynamicPositions);
     left = dynamicPositions[0];
-    right = dynamicPositions[1];    
-
-    angle = updateCompass();
-    angle = angle - baseAngle;
+    right = dynamicPositions[1];
   }
 
   motorAllStop();
-  Serial.println("rotations");
-  printDynamicPositions(dynamicPositions);
-  Serial.println(baseAngle);
-  Serial.println(finalAngle);
-  Serial.println(angle);
 }
 
 //////////////////////////////////////

@@ -37,6 +37,6 @@ void updateDynamicPositions(int *dynamicPositions){
 }
 
 // possible
-void updateDistanceFromOrigin(int *dynamicPositions){
+// void updateDistanceFromOrigin(int *dynamicPositions){
 
-}
+// }

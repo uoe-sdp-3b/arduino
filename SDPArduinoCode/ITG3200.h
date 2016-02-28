@@ -25,6 +25,8 @@
 #ifndef __ITG3200_H__
 #define __ITG3200_H__
 
+#include <stdint.h>
+
 
 #define GYRO_ADDRESS 0x68
 // ITG3200 Register Defines

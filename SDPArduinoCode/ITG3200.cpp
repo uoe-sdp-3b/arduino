@@ -81,7 +81,7 @@ int16_t ITG3200::read(uint8_t addressh, uint8_t addressl)
     Wire.beginTransmission(GYRO_ADDRESS);
     Wire.write(addressl);
     Wire.endTransmission();
-	Wire.requestFrom(GYRO_ADDRESS, 1);
+	  Wire.requestFrom(GYRO_ADDRESS, 1);
     if(Wire.available() > 0)
     {
         data |= Wire.read();

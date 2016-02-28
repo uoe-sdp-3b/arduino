@@ -6,9 +6,8 @@
 
 HMC5883L compass;
 int error = 0;
-float headingDegrees;
 
-void setupCompass(){
+void setupCompass(float *heading){
 
   // create compass
   compass = HMC5883L();
@@ -22,9 +21,11 @@ void setupCompass(){
   error = compass.SetMeasurementMode(Measurement_Continuous);
   if(error != 0)
     Serial.println(compass.GetErrorText(error));
+
+  updateCompass(heading);
 }
 
-float updateCompass(){
+void updateCompass(float *heading){
 
   // Retrive the raw values from the compass (not scaled).
   //MagnetometerRaw raw = compass.ReadRawAxis();
@@ -33,45 +34,42 @@ float updateCompass(){
   MagnetometerScaled scaled = compass.ReadScaledAxis();
   
   // Calculate heading when the magnetometer is level, then correct for signs of axis.
-  float heading = atan2(scaled.YAxis, scaled.XAxis);
+  *heading = atan2(scaled.YAxis, scaled.XAxis);
   
   // Once you have your heading, you must then add your 'Declination Angle', which is the 'Error' of the magnetic field in your location.
   // Find yours here: http://www.magnetic-declination.com/
   // Mine is: 2� 37' W, which is 2.617 Degrees, or (which we need) 0.0456752665 radians, I will use 0.0457
   // If you cannot find your Declination, comment out these two lines, your compass will be slightly off.
   float declinationAngle = -0.0445059;
-  heading += declinationAngle;
+  *heading += declinationAngle;
   
   // Correct for when signs are reversed.
-  if(heading < 0)
-    heading += 2*PI;
+  if(*heading < 0)
+    *heading += 2*PI;
     
   // Check for wrap due to addition of declination.
-  if(heading > 2*PI)
-    heading -= 2*PI;
+  if(*heading > 2*PI)
+    *heading -= 2*PI;
    
   // Convert radians to degrees for readability.
-  headingDegrees = heading * 180/M_PI;
+  *heading = *heading * 180/M_PI;
 
   // Normally we would delay the application by 66ms to allow the loop
   // to run at 15Hz (default bandwidth for the HMC5883L).
   // However since we have a long serial out (104ms at 9600) we will let
   // it run at its natural speed.
   //delay(66);
-  
-  return headingDegrees;
 
 }
 
-void printCompass(float headingDegrees){
-  
-  // Serial.print("Heading: ");
-  Serial.println(headingDegrees);
-  // Serial.println(" Degrees");
-
+void printCompass(float *heading){
+  Serial.println(*heading);
 }
 
 
+
+
+// not really needed, delete later on
 /*
   Serial.print("Raw:\t");
   Serial.print(raw.XAxis);
