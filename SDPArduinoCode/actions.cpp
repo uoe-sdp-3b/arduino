@@ -244,9 +244,3 @@ void robotClose(int power){
   // move action motor forward
   motorBackward(ACTION_MOTOR,power);
 }
-
-//////////////////////////////////////
-//      dynamic motor powering?     //
-//////////////////////////////////////
-
-//void matchPowerBasedOnCompass(){}
