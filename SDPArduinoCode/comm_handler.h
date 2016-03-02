@@ -18,6 +18,7 @@ read_from_action -> sends "busy" unless global interupt
   #define HEADER_COMPASS
 
 	bool read(int *message);
+	int getCurrentSeqNo();
 
 
 #endif

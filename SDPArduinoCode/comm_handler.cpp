@@ -12,6 +12,10 @@
 // This will be changed later on to improve latency issues (2 bytes instead of 7)  //
 /////////////////////////////////////////////////////////////////////////////////////
 
+int getCurrentSeqNo(){
+  return currentSeqNo;
+}
+
 // convert character to integer
 int getNumFromChar(char c){
   int r = (int)c - (int)'0';

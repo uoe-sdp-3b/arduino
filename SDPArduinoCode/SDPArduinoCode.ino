@@ -25,6 +25,8 @@
 #define PING 14
 #define GET_INFO 15
 
+unsigned long lastExe;
+
 /////////////////////////////////////////////////////////////////////////////////////
 //                                  initialSetup                                   //
 /////////////////////////////////////////////////////////////////////////////////////
@@ -32,6 +34,10 @@ void setup(){
 
   // sensor setup : actions.cpp/.h
   initialSetup();
+
+  lastExe = 0;
+
+
 
 }
 
@@ -104,19 +110,40 @@ void loop(){
         default:
         Serial.println("0001"); // corr = 0; seqNo = 0; done = 1; unregonized command = 1
         regonized = false; // corr = 0; seqNo = 0; done = 1; unregonized command = 1
+        lastExe = millis();
         break;
       
       }
 
       if(regonized){
+        lastExe = millis();
         if(seqNo == 0){
           Serial.println("001"); // corr = 0; seqNo = 0; done = 1; unregonized command = 0
         }
         else{
           Serial.println("011"); // corr = 0; seqNo = 1; done = 1; unregonized command = 0
         }
-
-
       }
+
     }
+
+    if(Serial.available() == 0){
+    // check if we have timed out
+    signed long timeout = millis() - (lastExe + 1500);
+    if(timeout > 0){
+      // resend last execution acknowledgement
+      int seqNo = getCurrentSeqNo();
+      lastExe = millis(); 
+
+        if(seqNo == 1){
+          Serial.println("001"); // corr = 0; seqNo = 0; done = 1; unregonized command = 0
+        }
+        else{
+          Serial.println("011"); // corr = 0; seqNo = 1; done = 1; unregonized command = 0
+
+        }
+    }
+  }
+
+  
 }
