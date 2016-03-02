@@ -9,8 +9,8 @@ ITG3200 gyro;
 		setups and calibrates the gyro sensor
 	*/
 	void setupGyro(){
-		gyro.init();
-    	gyro.zeroCalibrate(200,10);//sample 200 times to calibrate and it will take 200*10ms
+	      gyro.init();
+    	  gyro.zeroCalibrate(200,10);//sample 200 times to calibrate and it will take 200*10ms
 	}
 
 

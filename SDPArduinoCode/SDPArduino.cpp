@@ -19,7 +19,7 @@ void SDPsetup() {
   pinMode(A2,INPUT);
   pinMode(A3,INPUT);
 
-  pinMode(3,OUTPUT);
+  pinMode(3, INPUT);
   pinMode(5,OUTPUT);	// PWM OUTPUT / DIGITAL I/O
   pinMode(6,OUTPUT);
   pinMode(9,OUTPUT);

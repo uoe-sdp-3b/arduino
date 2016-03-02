@@ -1,11 +1,11 @@
 #include <Arduino.h>
 
+// #include "gyro.h"   // for reading and updating the angle rotated using gyro sensor
 #include "actions.h"    // for being able to access global variables 
 #include "SDPArduino.h" // for turning motors off and on
 #include "encoder.h" // for reading, updating and printing encoder board information
 #include "compass.h" // for reading, printing, updating compass
-#include "gyro.h"   // for reading and updating the angle rotated using gyro sensor
-#include "IRSensor.h"
+// #include "IRSensor.h"
 
 #include <math.h>
 
@@ -18,6 +18,10 @@ float angleRotated;
 // variable stating if ball is caught or not
 int caughtBall; // 0 = false; 1 = true
 
+// scaling the motors from commands recieved over RF
+int sLeft = 100;
+int sRight = 94;
+
 
 
 void initialSetup(){
@@ -29,7 +33,7 @@ void initialSetup(){
   setupCompass(&heading);
 
   // setup gyro sensor
-  setupGyro();
+  // setupGyro();
 
   // set time out for reading 7 bytes from radio link
   Serial.setTimeout(100);
@@ -43,11 +47,7 @@ void initialSetup(){
 //////////////////////////////////////
 void robotStop(){
 
-  // send reply message
-  Serial.println("0RS");
-
   motorAllStop();
-  // printMotorPositions();
 }
 
 //////////////////////////////////////
@@ -55,43 +55,26 @@ void robotStop(){
 //////////////////////////////////////
 void robotKick(int power){
   
-  // send reply message
-  Serial.println("0RK");
-  
-  int d = 1500 - (power * 10);
+  int d = 2000 - (power * 10);
   //Serial.println(d);
 
-  motorForward(ACTION_MOTOR, 70);
-  delay(200);
+  // motorBackward(ACTION_MOTOR, 70);
+  // delay(200);
   
   // move action motor backward
-  motorBackward(ACTION_MOTOR,power);
+  motorForward(ACTION_MOTOR,power);
   delay(d);
   motorAllStop();
 
-  motorForward(ACTION_MOTOR, 70);
-  delay(150);
-  motorAllStop();
+  // motorForward(ACTION_MOTOR, 70);
+  // delay(150);
+  // motorAllStop();
 }
 
 //////////////////////////////////////
-//          Robot Grab              //
-//////////////////////////////////////
-void robotGrab(int power){
-
-  // send reply message
-  Serial.println("0RG");
-
-  // move action motor forward
-  motorForward(ACTION_MOTOR,power);
-}
-
-//////////////////////////////////////
-//          Robot Forward           //
+//          Robot Forward           //        1st
 //////////////////////////////////////
 void robotForwardDistance(int distance){
-
-  Serial.println("0RF"); 
 
   // reset dynamicPositions
   resetDynamicPositions(dynamicPositions);
@@ -102,16 +85,13 @@ void robotForwardDistance(int distance){
   int right = dynamicPositions[1];
 
   // turn on motors
-  motorForward(FRONT_LEFT_MOTOR, 100);
-  motorForward(FRONT_RIGHT_MOTOR, 100);
+  motorForward(FRONT_LEFT_MOTOR, int(sLeft));
+  motorForward(FRONT_RIGHT_MOTOR, int(sRight));
 
   while(left < rot || right < rot){
     updateDynamicPositions(dynamicPositions);
-    //printDynamicPositions(dynamicPositions);
     left = dynamicPositions[0];
-    //Serial.println(left);
     right = dynamicPositions[1];    
-    //Serial.println(right);
   }
 
   motorAllStop(); 
@@ -119,11 +99,9 @@ void robotForwardDistance(int distance){
 }
 
 //////////////////////////////////////
-//          Robot Backward          //
+//          Robot Backward          //        2nd
 //////////////////////////////////////
 void robotBackwardDistance(int distance){
-
-  Serial.println("0RB");  
 
   // reset dynamicPositions
   resetDynamicPositions(dynamicPositions);
@@ -134,28 +112,23 @@ void robotBackwardDistance(int distance){
   int right = dynamicPositions[1];
 
   // turn on motors
-  motorBackward(FRONT_LEFT_MOTOR, 100);
-  motorBackward(FRONT_RIGHT_MOTOR, 100*0.97);
+  motorBackward(FRONT_LEFT_MOTOR, int(sLeft));
+  motorBackward(FRONT_RIGHT_MOTOR, int(sRight));
 
   while(left > rot || right > rot){
     delay(5);
     updateDynamicPositions(dynamicPositions);
-    //printDynamicPositions();
     left = dynamicPositions[0];
-    //Serial.println(left);
     right = dynamicPositions[1];    
-    //Serial.println(right);
   }
 
   motorAllStop();
 }
 
 //////////////////////////////////////
-//          Robot Left              //
+//          Robot Left              //        3rd CALIBRATE
 //////////////////////////////////////
 void robotTurnAntiClockwise(int degrees){
-
-  Serial.println("0RL");
 
   // reset dynamicPositions
   resetDynamicPositions(dynamicPositions);
@@ -166,8 +139,8 @@ void robotTurnAntiClockwise(int degrees){
   int right = dynamicPositions[1];
 
   // turn on motors
-  motorForward(FRONT_RIGHT_MOTOR, 90);
-  motorBackward(FRONT_LEFT_MOTOR, 90);
+  motorForward(FRONT_RIGHT_MOTOR, int(90*sRight));
+  motorBackward(FRONT_LEFT_MOTOR, int(90*sLeft));
 
   while(left > -rot || right < rot){
     
@@ -180,11 +153,9 @@ void robotTurnAntiClockwise(int degrees){
 }  
 
 //////////////////////////////////////
-//          Robot Right             //
+//          Robot Right             //        4th CALIBRATE
 //////////////////////////////////////
 void robotTurnClockwise(int degrees){
-  
-  Serial.println("0RR");
   
   // reset dynamicPositions
   resetDynamicPositions(dynamicPositions);
@@ -195,8 +166,8 @@ void robotTurnClockwise(int degrees){
   int right = dynamicPositions[1];
 
   // turn on motors
-  motorBackward(FRONT_RIGHT_MOTOR, 90);
-  motorForward(FRONT_LEFT_MOTOR, 90);
+  motorBackward(FRONT_RIGHT_MOTOR, int(90*sRight));
+  motorForward(FRONT_LEFT_MOTOR, int(90*sLeft));
 
   while(left < rot || right > -rot){
 
@@ -209,28 +180,106 @@ void robotTurnClockwise(int degrees){
 }
 
 //////////////////////////////////////
-//          Open grabber            //
+//          Open grabber            //    THIS NEEDS CHANGED!! DONE
 //////////////////////////////////////
-void robotOpen(int power){
-
-  // send reply message
-  Serial.println("0RO");
+void openGrabber(int power){
 
   // move action motor forward
-  motorBackward(ACTION_MOTOR,power);
+  motorForward(ACTION_MOTOR,100);
 }
 
 //////////////////////////////////////
-//          Close grabber           //
+//          Close grabber           //     THIS NEEDS CHANGED!! DONE
 //////////////////////////////////////
-void robotClose(int power){
-  motorForward(ACTION_MOTOR,power);
+void closeGrabber(int power){
+  motorBackward(ACTION_MOTOR,power);
   delay(50);
   motorStop(ACTION_MOTOR);
 
-  // send reply message
-  Serial.println("0RC");
-
   // move action motor forward
-  motorBackward(ACTION_MOTOR,power);
+  // motorForward(ACTION_MOTOR,power); ???????
+}
+
+//////////////////////////////////////
+//            PING                  //
+//////////////////////////////////////
+
+void ping(){
+  Serial.println("PONG");
+}
+
+
+/////////////////////////////////////
+//        READ COMPASS             //
+/////////////////////////////////////
+void readCompass(){
+
+    updateCompass(&heading);
+    Serial.print("compass heading: ");
+    printCompass(&heading);
+}
+
+
+
+
+/////////////////////////////////////
+//        READ INFRARED            //
+/////////////////////////////////////
+void readInfrared(){
+
+  int sensor_reading = digitalRead(3);
+  if(sensor_reading == 0){
+    Serial.println("y");
+  }
+  else{
+    Serial.println("n");
+  }
+
+}
+
+
+
+
+/////////////////////////////////////
+//        READ SONAR               //
+/////////////////////////////////////
+void readSonar(){
+
+}
+
+
+
+
+/////////////////////////////////////
+//        SCALE LEFT               //
+/////////////////////////////////////
+void scaleLeft(int scale){
+  sLeft = scale;
+  Serial.print("scale left: ");
+  Serial.println(sLeft);
+}
+
+
+
+
+/////////////////////////////////////
+//        SCALE RIGHT              //
+/////////////////////////////////////
+void scaleRight(int scale){
+  sRight = scale;
+  Serial.print("scale right: ");
+  Serial.println(sRight);
+}
+
+
+/////////////////////////////////////
+//    PRINT DYNAMIC POSITIONS      //
+/////////////////////////////////////
+void getInfo(){
+  printDynamicPositions(dynamicPositions);
+
+  Serial.print("left sclae: ");
+  Serial.println(sLeft);
+  Serial.print("right scale: ");
+  Serial.println(sRight);
 }

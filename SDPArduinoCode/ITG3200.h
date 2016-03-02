@@ -22,10 +22,11 @@
 //  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //
 /*******************************************************************************/
-#ifndef __ITG3200_H__
-#define __ITG3200_H__
 
 #include <stdint.h>
+
+#ifndef HEADER_ITG3200
+  #define HEADER_ITG3200
 
 
 #define GYRO_ADDRESS 0x68

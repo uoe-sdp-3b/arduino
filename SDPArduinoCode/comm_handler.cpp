@@ -1,21 +1,10 @@
 #include <stdlib.h>
 #include <Arduino.h>
+#include "comm_handler.h"
 
-/////////////////////////////////////////////////////////////////////////////////////
-//                       Check if command not redundant                            //
-/////////////////////////////////////////////////////////////////////////////////////
-// bool ignore(int seqNo){
-//   if (seqNo == lastSeqNo) {
-//     if (done) {
-//       Serial.println(DONE);
-//     }
-//     return true;
-//   } else {
-//     lastSeqNo = seqNo;
-//     done = false;
-//     return false;
-//   }
-// }
+
+  // Global Variables
+  int currentSeqNo = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -29,12 +18,6 @@ int getNumFromChar(char c){
   return r;
 }
 
-// deocde signiture byte
-int getSig(String c){
-  int r = getNumFromChar(c[0]);
-  return r;
-}
-
 // decode sequence byte
 int getSeqNo(String c){
   int r = getNumFromChar(c[6]);
@@ -43,7 +26,9 @@ int getSeqNo(String c){
 
 // decode opcode byte
 int getOpcode(String c){
-  int r = getNumFromChar(c[1]);
+  int r10 = getNumFromChar(c[0]);
+  int r1 = getNumFromChar(c[1]);
+  int r = (10*r10) + r1;
   return r;
 }
 
@@ -69,10 +54,99 @@ int check_checksum(String c, int opcode, int arg){
   
 }
 
-// Should empty serial buffer
-// juastus has said otherwise, TEST and find solution if not.
+
 void serialFlush(){
   while(Serial.available() > 0) {
     char t = Serial.read();
   }
+}
+
+
+
+bool read(int *message){
+  
+  bool check = false;
+  int opcode = -1;
+  int arg = -1;
+  message[0] = opcode;
+  message[1] = arg;
+  message[2] = currentSeqNo;
+
+    // if message is available on our frequency accept it.
+  if(Serial.available() > 0){
+    
+    // save message sent from PC to STRING c.
+    String c = Serial.readString();
+    c.trim();
+
+    // if mesage is incomplete send error message and flush serial 
+    if(c.length() != 7){
+      // Serial.println(c);
+      Serial.println("100");  // corr = 1; seqNo = 0 (doesnt matter); done = 0; unregonized command = 1
+      serialFlush();
+      return false;
+    }
+    
+    // initial instruction decode
+    int instructionSeqNo = getSeqNo(c);
+
+    
+    if (currentSeqNo == instructionSeqNo){
+    // completed after sig and ignore checks to avoid unessacary computation
+    // decodes instructions, fetches opcode, argument and checks the entire message
+    int opcode = getOpcode(c);
+    int arg = getArg(c);
+    int check = check_checksum(c, opcode, arg);
+
+    if(check == 0){
+        if(currentSeqNo == 0){
+          Serial.println("100"); // corr = 1; seqNo = currentSeqNo; done = 0; unregonized command = 0
+        }
+        else{
+          Serial.println("110"); // corr = 1, seqNo = currentSeqNo; done = 0; unregonized command = 0;
+        }
+        return false;
+    }
+    // no corruption
+    else{
+        message[0] = opcode;
+        message[1] = arg;
+        message[2] = currentSeqNo;
+        
+        if(currentSeqNo == 0){
+          Serial.println("000");
+          currentSeqNo = 1;
+        }
+        else{
+          Serial.println("010");
+          currentSeqNo = 0;
+        }
+
+        // if(currentSeqNo == 0){
+        //   currentSeqNo = 1;
+        // }
+        // else{
+        //   currentSeqNo = 0;
+        // }
+
+
+        return true;
+      }
+    }
+
+    else{
+      // last message ACK not reached PC
+      // resend ACK for last message
+      if(currentSeqNo == 0){
+        Serial.println("011"); // corr = 0; seqNo = 0; done = 1;
+      }
+      else{
+        Serial.println("001"); // corr = 0; seqNo = 1; done = 1;
+      }
+      return false;
+    }
+
+
+  }
+
 }

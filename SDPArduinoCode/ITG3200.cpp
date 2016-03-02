@@ -22,10 +22,11 @@
 //  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //
 /*******************************************************************************/
-
 #include <Arduino.h>
 #include <Wire.h>
 #include "ITG3200.h"
+
+
 
 /**********************************************************************/
 /*Function: Read a byte with the register address of ITG3200.         */

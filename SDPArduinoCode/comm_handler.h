@@ -17,18 +17,7 @@ read_from_action -> sends "busy" unless global interupt
 #ifndef HEADER_COMPASS
   #define HEADER_COMPASS
 
-	// bool ignore(int seqNo);
-	void serialFlush();
-	int getSig(String c);
-	int getSeqNo(String c);
-	int getOpcode(String c);
-	int getArg(String c);
-	int check_checksum(String c, int opcode, int arg);
-
-
-	
-
-
+	bool read(int *message);
 
 
 #endif

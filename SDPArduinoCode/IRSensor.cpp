@@ -3,7 +3,7 @@
 #include <Arduino.h>
 
 
-void IRSensorValue(int *IRread)
+void readIR(int *IRread)
 {
   int sensor_reading = readDigitalSensorData(IR_PORT_NO);
   if(sensor_reading == 0){
@@ -15,7 +15,7 @@ void IRSensorValue(int *IRread)
 }
 
 
-void IRSensorPrint(int *IRread)
+void printIR(int *IRread)
 {
   Serial.println(*IRread);
 }

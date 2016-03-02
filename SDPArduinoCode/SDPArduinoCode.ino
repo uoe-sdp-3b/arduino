@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include <Wire.h>
+#include <Wire.h> // never remove this, for some reason it is needed here!
 #include "actions.h"
 #include "comm_handler.h"
 
@@ -11,22 +11,19 @@
 #define LEFT 3
 #define RIGHT 4
 #define KICK 5 
-#define GRAB 6
-#define STORE 7
-#define OPEN 8
-#define CLOSE 9
+// #define GRAB 7
+// #define STORE 7
+#define OPEN_GRABBER 6
+#define CLOSE_GRABBER 7
 
-// Outbound message definitions
-#define CHECKSUM_FAILED "0CF"
-#define UNRECOGNIZED_COMMAND "0UC"
-#define DONE "0DN"
+#define READ_COMPASS 8
+#define READ_INFRARED 9
+#define READ_SONAR 10
+#define SCALE_LEFT 11
+#define SCALE_RIGHT 12
 
-// Global Variables
-int  lastSeqNo;
-bool done;
-
-
-
+#define PING 14
+#define GET_INFO 15
 
 /////////////////////////////////////////////////////////////////////////////////////
 //                                  initialSetup                                   //
@@ -41,95 +38,85 @@ void setup(){
 ////////////////////////////////////////////////////////////////////////////////////////
 //                              Main loop                                             //
 ////////////////////////////////////////////////////////////////////////////////////////
-bool ignore(int seqNo){
-  if (seqNo == lastSeqNo) {
-    if (done) {
-      Serial.println(DONE);
-    }
-    return true;
-  } else {
-    lastSeqNo = seqNo;
-    done = false;
-    return false;
-  }
-}
 
 void loop(){
-  
-  // if message is available on our frequency accept it.
-  if(Serial.available() > 0){
-    
-    // save message sent from PC to STRING c.
-    String c = Serial.readString();
-    c.trim();
 
-    // if mesage is incomplete send error message and flush serial 
-    if(c.length() != 7){
-      Serial.println("0IW");
-      serialFlush();
-      return;
-    }
-    
-    // initial instruction decode
-    int sig = getSig(c);
-    int seqNo = getSeqNo(c);
-      
-    // Quits if sig belongs to other teams
-    // OR if command is redundant (i.e. already executed)
-    if(sig != 0){ return; }
-    if(ignore(seqNo)){ return; }
+  //
+  int message[3] = {0,0,0};
+  bool check = read(message);
+  bool regonized =  true;
+  int opcode = message[0];
+  int arg = message[1];
+  int seqNo = message[2];
 
-    // completed after sig and ignore checks to avoid unessacary computation
-    // decodes instructions, fetches opcode, argument and checks the entire message
-    int opcode = getOpcode(c);
-    int arg = getArg(c);
 
-    // flag that shows if command was recognized
-    bool recognized = true;
-    
-    // if checksum is correct continue decoding message and execute
-    int check = check_checksum(c, opcode, arg);
-    if(check == 1){
+    if(check){
     
       switch (opcode){
 
-        case STOP:        robotStop();
+        case STOP:              robotStop();
         break;
         
-        case FORWARD:     robotForwardDistance(arg);
+        case FORWARD:           robotForwardDistance(arg);
         break;
 
-        case BACKWARD:    robotBackwardDistance(arg);
+        case BACKWARD:          robotBackwardDistance(arg);
         break;
 
-        case LEFT:        robotTurnAntiClockwise(arg);
+        case LEFT:              robotTurnAntiClockwise(arg);
         break;
 
-        case RIGHT:       robotTurnClockwise(arg);
+        case RIGHT:             robotTurnClockwise(arg);
         break;
 
-        case KICK:        robotKick(arg);
+        case KICK:              robotKick(arg);
         break;
 
-        case GRAB:        robotGrab(arg);
+        case OPEN_GRABBER:      openGrabber(arg);
         break;
         
-        case OPEN:        robotOpen(arg);
+        case CLOSE_GRABBER:     closeGrabber(arg);
         break;
-        
-        case CLOSE:       robotClose(arg);
+
+
+        case READ_COMPASS:      readCompass();
+        break;
+
+        case READ_INFRARED:     readInfrared();
+        break;
+
+        case READ_SONAR:
+        break;
+
+        case SCALE_LEFT:        scaleLeft(arg);
+        break;
+
+        case SCALE_RIGHT:       scaleRight(arg);
+        break;
+
+        case GET_INFO:          getInfo();
+        break;
+
+
+        case PING:            ping();
         break;
           
-        default:          Serial.println(UNRECOGNIZED_COMMAND); recognized = false;
+        default:
+        Serial.println("0001"); // corr = 0; seqNo = 0; done = 1; unregonized command = 1
+        regonized = false; // corr = 0; seqNo = 0; done = 1; unregonized command = 1
         break;
       
-      } // end of switch 
-      if (recognized) { done = true; }
-      else { lastSeqNo = not lastSeqNo; }
-    } // end of if checksum
-    else{ Serial.println(CHECKSUM_FAILED);
-    lastSeqNo = not lastSeqNo;  } // checksum failed
+      }
 
-  } // end of if serial.avalaible 
-} // end of loop body
+      if(regonized){
+        if(seqNo == 0){
+          Serial.println("001"); // corr = 0; seqNo = 0; done = 1; unregonized command = 0
+        }
+        else{
+          Serial.println("011"); // corr = 0; seqNo = 1; done = 1; unregonized command = 0
+        }
 
+
+      }
+    }
+}
