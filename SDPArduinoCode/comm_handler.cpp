@@ -93,64 +93,66 @@ bool read(int *message){
     
     // initial instruction decode
     int instructionSeqNo = getSeqNo(c);
-
-    
-    if (currentSeqNo == instructionSeqNo){
-    // completed after sig and ignore checks to avoid unessacary computation
-    // decodes instructions, fetches opcode, argument and checks the entire message
     int opcode = getOpcode(c);
     int arg = getArg(c);
     int check = check_checksum(c, opcode, arg);
 
-    if(check == 0){
-        if(currentSeqNo == 0){
-          Serial.println("100"); // corr = 1; seqNo = currentSeqNo; done = 0; unregonized command = 0
+    if(check == 1){
+
+      // deals with the case the 2nd acknowledgement is lost! 
+      // seqNo already flipped, so flip them again for sending the 2nd ack back to the python script
+      if(opcode == 17){
+        message[0] = opcode;
+        message[1] = arg;
+        message[2] = instructionSeqNo;
+        return true;
+      }
+
+        if(currentSeqNo == instructionSeqNo){
+          message[0] = opcode;
+          message[1] = arg;
+          message[2] = currentSeqNo;
+        
+          // print 1st acknowledgement message
+          if(currentSeqNo == 0){
+            Serial.println("000");
+            currentSeqNo = 1;
+          }
+
+          else{
+            Serial.println("010");
+            currentSeqNo = 0;
+          }
+
+          return true;
+        }
+
+        else{
+          // first acknowledgement not recieved by python script resend!
+          if(currentSeqNo == 0){
+            Serial.println("010"); // corr = 0; seqNo = 0; done = 0;
+          }
+          else{
+            Serial.println("000"); // corr = 0; seqNo = 1; done = 0;
+          }
+            return false;
+        }
+
+
+
+    }
+    else{
+      // send corruption in insturction
+      // as to resend the last command 
+      if(currentSeqNo == 0){
+          Serial.println("100"); // corr = 1; seqNo = currentSeqNo; done = 0;
         }
         else{
-          Serial.println("110"); // corr = 1, seqNo = currentSeqNo; done = 0; unregonized command = 0;
+          Serial.println("110"); // corr = 1, seqNo = currentSeqNo; done = 0;
         }
         return false;
     }
-    // no corruption
-    else{
-        message[0] = opcode;
-        message[1] = arg;
-        message[2] = currentSeqNo;
-        
-        if(currentSeqNo == 0){
-          Serial.println("000");
-          currentSeqNo = 1;
-        }
-        else{
-          Serial.println("010");
-          currentSeqNo = 0;
-        }
-
-        // if(currentSeqNo == 0){
-        //   currentSeqNo = 1;
-        // }
-        // else{
-        //   currentSeqNo = 0;
-        // }
-
-
-        return true;
-      }
-    }
-
-    else{
-      // last message ACK not reached PC
-      // resend ACK for last message
-      if(currentSeqNo == 0){
-        Serial.println("011"); // corr = 0; seqNo = 0; done = 1;
-      }
-      else{
-        Serial.println("001"); // corr = 0; seqNo = 1; done = 1;
-      }
-      return false;
-    }
-
-
   }
-
 }
+
+

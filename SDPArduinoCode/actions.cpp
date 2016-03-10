@@ -10,13 +10,13 @@
 #include <math.h>
 
 // variable to hold encoder readings
-int dynamicPositions[ROTARY_COUNT];
+int dynamicPositions[ROTARY_COUNT] = {0};
 // variable to hold compass readings
-float heading;
+float heading = 0.0;
 // variables for holding the current angle that has been roatated based on gyro information
-float angleRotated;
+float angleRotated = 0.0;
 // variable stating if ball is caught or not
-int caughtBall; // 0 = false; 1 = true
+int caughtBall = 0; // 0 = false; 1 = true
 
 // scaling the motors from commands recieved over RF
 int sLeft = 100;
@@ -95,7 +95,7 @@ void robotForwardDistance(int distance){
   }
 
   motorAllStop(); 
-  printDynamicPositions(dynamicPositions);
+  // printDynamicPositions(dynamicPositions);
 }
 
 //////////////////////////////////////
@@ -282,4 +282,31 @@ void getInfo(){
   Serial.println(sLeft);
   Serial.print("right scale: ");
   Serial.println(sRight);
+}
+
+
+
+
+void forwardSlow(int distance){
+
+  // reset dynamicPositions
+  resetDynamicPositions(dynamicPositions);
+
+  // setup positions of rotations
+  int rot = (int) (distance * 7.22) - 10; // 6.2471 = rotations for 1 cm (WRONG ATM)
+  int left = dynamicPositions[0];
+  int right = dynamicPositions[1];
+
+  // turn on motors
+  motorForward(FRONT_LEFT_MOTOR, int(sLeft*0.7));
+  motorForward(FRONT_RIGHT_MOTOR, int(sRight*0.7));
+
+  while(left < rot || right < rot){
+    updateDynamicPositions(dynamicPositions);
+    left = dynamicPositions[0];
+    right = dynamicPositions[1];    
+  }
+
+  motorAllStop(); 
+  // printDynamicPositions(dynamicPositions);
 }

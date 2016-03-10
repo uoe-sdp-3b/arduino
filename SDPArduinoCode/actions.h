@@ -31,4 +31,6 @@
 	void scaleRight(int scale);
 	void getInfo();
 
+	void forwardSlow(int distance);
+
 #endif
