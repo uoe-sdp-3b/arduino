@@ -118,7 +118,7 @@ void loop(){
 
       // print acknowledgement message to state its completed the execution of the command
       if(regonized){
-        serialFlush(); // empty serial (as only repeated commands will be stored in there at this moement in time)
+        // serialFlush(); // empty serial (as only repeated commands will be stored in there at this moement in time)
         if(seqNo == 0){
           Serial.println("001"); // corr = 0; seqNo = 0; done = 1;
         }
