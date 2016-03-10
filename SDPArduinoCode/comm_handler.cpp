@@ -76,6 +76,11 @@ bool read(int *message){
   message[1] = arg;
   message[2] = currentSeqNo;
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                        reading serial for message will be changed to bytes!                         //
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     // if message is available on our frequency accept it.
   if(Serial.available() > 0){
     
@@ -90,6 +95,11 @@ bool read(int *message){
       serialFlush();
       return false;
     }
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                              decoding message, this will be different as well once changed to bytes!                  //
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
     // initial instruction decode
     int instructionSeqNo = getSeqNo(c);
@@ -97,62 +107,49 @@ bool read(int *message){
     int arg = getArg(c);
     int check = check_checksum(c, opcode, arg);
 
-    if(check == 1){
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      // deals with the case the 2nd acknowledgement is lost! 
-      // seqNo already flipped, so flip them again for sending the 2nd ack back to the python script
-      if(opcode == 17){
-        message[0] = opcode;
-        message[1] = arg;
-        message[2] = instructionSeqNo;
-        return true;
-      }
+    if(currentSeqNo == instructionSeqNo){
 
-        if(currentSeqNo == instructionSeqNo){
-          message[0] = opcode;
-          message[1] = arg;
-          message[2] = currentSeqNo;
-        
+
+      message[0] = opcode;
+      message[1] = arg;
+      message[2] = currentSeqNo;  
+
+      if(check == 1){
+
           // print 1st acknowledgement message
           if(currentSeqNo == 0){
-            Serial.println("000");
             currentSeqNo = 1;
-          }
-
-          else{
-            Serial.println("010");
+          }else{
             currentSeqNo = 0;
           }
 
           return true;
-        }
 
-        else{
-          // first acknowledgement not recieved by python script resend!
-          if(currentSeqNo == 0){
-            Serial.println("010"); // corr = 0; seqNo = 0; done = 0;
-          }
-          else{
-            Serial.println("000"); // corr = 0; seqNo = 1; done = 0;
-          }
-            return false;
-        }
-
-
-
-    }
-    else{
-      // send corruption in insturction
-      // as to resend the last command 
-      if(currentSeqNo == 0){
+      }else{
+        // corruption exists
+        if(currentSeqNo == 0){
           Serial.println("100"); // corr = 1; seqNo = currentSeqNo; done = 0;
         }
         else{
           Serial.println("110"); // corr = 1, seqNo = currentSeqNo; done = 0;
         }
         return false;
+      }
+
+
+    }else{
+      //acknowledgement not recieved by python script resend!
+      // current seqNo is the old one ... it hast changed
+      if(currentSeqNo == 0){
+        Serial.println("011"); // corr = 0; seqNo = 0; done = 1;
+      }else{
+          Serial.println("001"); // corr = 0; seqNo = 1; done = 1;
+      }
+            return false;
     }
-  }
+}
 }
 
 

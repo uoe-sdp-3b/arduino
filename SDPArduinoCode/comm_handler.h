@@ -19,6 +19,7 @@ read_from_action -> sends "busy" unless global interupt
 
 	bool read(int *message);
 	int getCurrentSeqNo();
+	void serialFlush();
 
 
 #endif

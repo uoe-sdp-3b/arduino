@@ -25,7 +25,7 @@
 #define PING 14
 #define GET_INFO 15
 #define FORWARD_SLOW 16
-#define RESEND_2_ACK 17
+// #define RESEND_2_ACK 17
 
 int counter = 0;
 
@@ -48,11 +48,10 @@ void loop(){
   //
   int message[3] = {0,0,0};
   bool check = read(message);
-  bool regonized =  false;
+  bool regonized =  true;
   int opcode = message[0];
   int arg = message[1];
   int seqNo = message[2];
-
 
 
     if(check){
@@ -60,90 +59,65 @@ void loop(){
       switch (opcode){
 
         case STOP:              robotStop();
-        regonized = true;
         break;
         
         case FORWARD:           robotForwardDistance(arg);
-        regonized = true;
         break;
 
         case BACKWARD:          robotBackwardDistance(arg);
-        regonized = true;
         break;
 
         case LEFT:              robotTurnAntiClockwise(arg);
-        regonized = true;
         break;
 
         case RIGHT:             robotTurnClockwise(arg);
-        regonized = true;
         break;
 
         case KICK:              robotKick(arg);
-        regonized = true;
         break;
 
         case OPEN_GRABBER:      openGrabber(arg);
-        regonized = true;
         break;
         
         case CLOSE_GRABBER:     closeGrabber(arg);
-        regonized = true;
         break;
 
 
         case READ_COMPASS:      readCompass();
-        regonized = true;
         break;
 
         case READ_INFRARED:     readInfrared();
-        regonized = true;
         break;
 
         case READ_SONAR:
-        regonized = true;
         break;
 
         case SCALE_LEFT:        scaleLeft(arg);
-        regonized = true;
         break;
 
         case SCALE_RIGHT:       scaleRight(arg);
-        regonized = true;
         break;
 
         case GET_INFO:          getInfo();
-        regonized = true;
         break;
 
         case FORWARD_SLOW:     forwardSlow(arg);
-        regonized = true;
 
         case PING:              ping();
-        regonized = true;
         counter += 1;
         Serial.print("COUNTER = ");
         Serial.println(counter);
-
-        break;
-
-        case RESEND_2_ACK:    // resend 2nd ack with current seqNo
-        if(seqNo == 0){
-          Serial.println("001"); // corr = 0; seqNo = 0; done = 1; unregonized command = 0
-          }
-          else{
-            Serial.println("011"); // corr = 0; seqNo = 1; done = 1; unregonized command = 0
-          }
         break;
           
         default:         Serial.println("0001"); // corr = 0; seqNo = 0; done = 1; UNKOWN COMAMAND
+        regonized = false;
         break;
-      
       }
 
-
-      // print 2nd acknowledgement message
+      // print acknowledgement message to state its completed the execution of the command
       if(regonized){
+        // // flush serial in the case that the action has just been completed and many other resend command have been sent
+        // serialFlush();
         if(seqNo == 0){
           Serial.println("001"); // corr = 0; seqNo = 0; done = 1;
         }
@@ -152,7 +126,7 @@ void loop(){
         }
       }
 
-    }
+    } // end of check
 
   
 }
