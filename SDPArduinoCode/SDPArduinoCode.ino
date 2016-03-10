@@ -45,9 +45,11 @@ void setup(){
 
 void loop(){
 
-  //
+  // read input from RF 
   int message[3] = {0,0,0};
   bool check = read(message);
+
+  // save input from RF and use accordinly
   bool regonized =  true;
   int opcode = message[0];
   int arg = message[1];
@@ -105,7 +107,7 @@ void loop(){
 
         case PING:              ping();
         counter += 1;
-        Serial.print("COUNTER = ");
+        Serial.print("!");
         Serial.println(counter);
         break;
           
@@ -116,8 +118,7 @@ void loop(){
 
       // print acknowledgement message to state its completed the execution of the command
       if(regonized){
-        // // flush serial in the case that the action has just been completed and many other resend command have been sent
-        // serialFlush();
+        serialFlush(); // empty serial (as only repeated commands will be stored in there at this moement in time)
         if(seqNo == 0){
           Serial.println("001"); // corr = 0; seqNo = 0; done = 1;
         }

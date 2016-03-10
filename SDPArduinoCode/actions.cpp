@@ -205,7 +205,7 @@ void closeGrabber(int power){
 //////////////////////////////////////
 
 void ping(){
-  Serial.println("PONG");
+  Serial.println("!PONG");
 }
 
 
@@ -215,7 +215,7 @@ void ping(){
 void readCompass(){
 
     updateCompass(&heading);
-    Serial.print("compass heading: ");
+    Serial.print("!compass heading: ");
     printCompass(&heading);
 }
 
@@ -255,7 +255,7 @@ void readSonar(){
 /////////////////////////////////////
 void scaleLeft(int scale){
   sLeft = scale;
-  Serial.print("scale left: ");
+  Serial.print("!scale left: ");
   Serial.println(sLeft);
 }
 
@@ -267,7 +267,7 @@ void scaleLeft(int scale){
 /////////////////////////////////////
 void scaleRight(int scale){
   sRight = scale;
-  Serial.print("scale right: ");
+  Serial.print("!scale right: ");
   Serial.println(sRight);
 }
 
@@ -278,9 +278,9 @@ void scaleRight(int scale){
 void getInfo(){
   printDynamicPositions(dynamicPositions);
 
-  Serial.print("left sclae: ");
+  Serial.print("!left sclae: ");
   Serial.println(sLeft);
-  Serial.print("right scale: ");
+  Serial.print("!right scale: ");
   Serial.println(sRight);
 }
 

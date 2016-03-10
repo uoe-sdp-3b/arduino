@@ -109,47 +109,56 @@ bool read(int *message){
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    if(currentSeqNo == instructionSeqNo){
+    // checksum passed
+    if(check == 1){
 
+      // its a new instruction
+      if(currentSeqNo == instructionSeqNo){
 
-      message[0] = opcode;
-      message[1] = arg;
-      message[2] = currentSeqNo;  
+        // alter message array for usage in main loop()
+        message[0] = opcode;
+        message[1] = arg;
+        message[2] = instructionSeqNo;
 
-      if(check == 1){
-
-          // print 1st acknowledgement message
-          if(currentSeqNo == 0){
-            currentSeqNo = 1;
-          }else{
-            currentSeqNo = 0;
-          }
-
-          return true;
-
-      }else{
-        // corruption exists
+        // flip sequence numbers
         if(currentSeqNo == 0){
-          Serial.println("100"); // corr = 1; seqNo = currentSeqNo; done = 0;
+          currentSeqNo = 1;
         }
         else{
-          Serial.println("110"); // corr = 1, seqNo = currentSeqNo; done = 0;
+          currentSeqNo = 0;
+        }
+        return true;
+      }
+
+      // its an old instruction [i.e. last ack got lost]
+      else{
+        if(instructionSeqNo == 0){
+          Serial.println("001");
+        }
+        else{
+          Serial.println("011");
         }
         return false;
       }
 
-
-    }else{
-      //acknowledgement not recieved by python script resend!
-      // current seqNo is the old one ... it hast changed
-      if(currentSeqNo == 0){
-        Serial.println("011"); // corr = 0; seqNo = 0; done = 1;
-      }else{
-          Serial.println("001"); // corr = 0; seqNo = 1; done = 1;
-      }
-            return false;
     }
-}
+
+    // checksum failed, report corruption
+    else{
+
+      if(instructionSeqNo == 0){
+        Serial.println("100");
+      }
+      else{
+        Serial.println("110");
+      }
+      return false;
+
+    }
+  }
+
+
+
 }
 
 

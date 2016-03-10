@@ -8,7 +8,7 @@
 /////////////////////////////////////
 
 void printDynamicPositions(int *dynamicPositions){
-  Serial.print("Dynamic Positions: ");
+  Serial.print("!Dynamic Positions: ");
   for (int i = 0; i < ROTARY_COUNT; i++) {
     Serial.print(dynamicPositions[i]);
     Serial.print(' ');
