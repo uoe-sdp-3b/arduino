@@ -20,8 +20,7 @@ int caughtBall = 0; // 0 = false; 1 = true
 
 // scaling the motors from commands recieved over RF
 int sLeft = 100;
-int sRight = 94;
-
+int sRight = 98;
 
 
 void initialSetup(){
@@ -62,7 +61,7 @@ void robotKick(int power){
   // delay(200);
   
   // move action motor backward
-  motorForward(ACTION_MOTOR,power);
+  motor(ACTION_MOTOR,power);
   delay(d);
   motorAllStop();
 
@@ -85,8 +84,8 @@ void robotForwardDistance(int distance){
   int right = dynamicPositions[1];
 
   // turn on motors
-  motorForward(FRONT_LEFT_MOTOR, int(sLeft));
-  motorForward(FRONT_RIGHT_MOTOR, int(sRight));
+  motorForward(FRONT_LEFT_MOTOR, sLeft);
+  motorForward(FRONT_RIGHT_MOTOR, sRight);
 
   while(left < rot || right < rot){
     updateDynamicPositions(dynamicPositions);
@@ -112,11 +111,10 @@ void robotBackwardDistance(int distance){
   int right = dynamicPositions[1];
 
   // turn on motors
-  motorBackward(FRONT_LEFT_MOTOR, int(sLeft));
-  motorBackward(FRONT_RIGHT_MOTOR, int(sRight));
+  motorBackward(FRONT_LEFT_MOTOR, sLeft);
+  motorBackward(FRONT_RIGHT_MOTOR, sRight);
 
   while(left > rot || right > rot){
-    delay(5);
     updateDynamicPositions(dynamicPositions);
     left = dynamicPositions[0];
     right = dynamicPositions[1];    
@@ -139,8 +137,8 @@ void robotTurnAntiClockwise(int degrees){
   int right = dynamicPositions[1];
 
   // turn on motors
-  motorForward(FRONT_RIGHT_MOTOR, int(90*sRight));
-  motorBackward(FRONT_LEFT_MOTOR, int(90*sLeft));
+  motorForward(FRONT_RIGHT_MOTOR, sRight);
+  motorBackward(FRONT_LEFT_MOTOR, sLeft);
 
   while(left > -rot || right < rot){
     
@@ -166,8 +164,8 @@ void robotTurnClockwise(int degrees){
   int right = dynamicPositions[1];
 
   // turn on motors
-  motorBackward(FRONT_RIGHT_MOTOR, int(90*sRight));
-  motorForward(FRONT_LEFT_MOTOR, int(90*sLeft));
+  motorBackward(FRONT_RIGHT_MOTOR, sRight);
+  motorForward(FRONT_LEFT_MOTOR, sLeft);
 
   while(left < rot || right > -rot){
 
@@ -186,7 +184,7 @@ void openGrabber(int power){
 
   // move action motor forward
   motorForward(ACTION_MOTOR,100);
-}
+} 
 
 //////////////////////////////////////
 //          Close grabber           //     THIS NEEDS CHANGED!! DONE
@@ -251,7 +249,7 @@ void readSonar(){
 
 
 /////////////////////////////////////
-//        SCALE LEFT               //
+//             LEFT               //
 /////////////////////////////////////
 void scaleLeft(int scale){
   sLeft = scale;
